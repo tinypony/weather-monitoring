@@ -7,6 +7,7 @@ This is backend service for weather monitoring
 
 ## Installation
 * In project root directory run 
+```
 npm install
 npm start
-
+```
