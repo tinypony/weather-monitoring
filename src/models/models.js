@@ -1,41 +1,45 @@
-var mongoose = require('mongoose');
+import {default as mongoose, Schema} from 'mongoose';
 
-const MonitoredCity = {
+const MonitoringSpecSchema = new Schema({
 	name: {
-        type: String,
-        required: [true, 'Specify city name']
-    },
+  	type: String,
+    required: [true, 'Specify city name']
+  },
 	threshold: {
-        type: Number,
-        required: [true, 'Specify threshold']
-    },
+    type: Number,
+    required: [true, 'Specify threshold']
+  },
 	direction: {
-        type: String,
-        required: [true, 'Specify "larger" or "smaller"']
-    }
-};
+    type: String,
+    required: [true, 'Specify "larger" or "smaller"']
+  },
+	owner: {
+		type: Schema.Types.ObjectId,
+		ref: 'User'
+	}
+});
 
-const CityForecast = {
+const CityForecastSchema = new Schema({
 	name: {
         type: String,
         required: [true, 'Specify city name']
     },
     forecast: {
     	type: [{
-    		time: Number, 
+    		time: Number,
     		temp: Number
     	}],
     	default: []
     }
-}
-
-const CityForecastSchema = new mongoose.Schema(CityForecast);
-
-const UserSchema = new mongoose.Schema({
-	id: String,
-  	name: String,
-  	monitored: [MonitoredCity]
 });
 
+const UserSchema = new Schema({
+	id: String,
+  name: String
+});
+
+
+
 export const User = mongoose.model('User', UserSchema);
-export const City = mongoose.model('City', CityForecastSchema);
+export const MonitoringSpec = mongoose.model('MonitoringSpec', MonitoringSpecSchema);
+export const Forecast = mongoose.model('Forecast', CityForecastSchema);

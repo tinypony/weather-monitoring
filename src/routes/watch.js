@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 
-import {User, City} from '../models/models';
+import {User, Forecast, MonitoringSpec} from '../models/models';
 import _ from 'lodash';
 import babelPolyfill from 'babel-polyfill';
 
@@ -19,13 +19,14 @@ function configureWatch() {
 	/* GET watched cities listing with alerts. */
 	router.get('/', async function(req, res) {
 		try {
-			const user = await User.findOne().exec();
-			const cities = await City.find({}).exec();
+			const user = await User.findOne().exec(); //imagine we retrieve the authenticated user rather than the only created one
+			const monitored = await MonitoringSpec.find({owner: user._id});
+			const cities = await Forecast.find({}).exec();
 
-			const monitoredCitiesWithAlerts = _.map(user.monitored, monitoringSpec => {
+			const monitoredCitiesWithAlerts = _.map(monitored, monitoringSpec => {
 				const latestForecast = _.find(cities, {name: monitoringSpec.name});
 				const firstBreach = findFirstBreach(latestForecast.forecast, monitoringSpec.threshold, monitoringSpec.direction);
-				const plainSpec = _.pick(monitoringSpec, 'name', 'threshold', 'direction');
+				const plainSpec = _.pick(monitoringSpec, '_id', 'name', 'threshold', 'direction', 'owner');
 
 				if(_.isUndefined(firstBreach)) {
 					return _.assign({}, plainSpec, {alert: {breached: false}});
@@ -44,43 +45,32 @@ function configureWatch() {
 		}
 	});
 
-	router.delete('/:cityName', async function(req, res) {
-		const cityNameToDelete = req.params.cityName;
-		const user = await User.findOne().exec();
-		const existingEntry = _.find(user.monitored, {name: cityNameToDelete});
-
-		// A new city is being added
-		if(!_.isUndefined(existingEntry)) {
-			const idx = _.indexOf(user.monitored, existingEntry);
-			user.monitored.splice(idx, 1);
-			await user.save();
-			res.status(200).send();
-		} else {
-			res.status(404).send({
-				message: 'City is not monitored'
-			});
-		}
-
+	router.delete('/:id', async function(req, res) {
+		const {id} = req.params;
+		const user = await User.findOne().exec(); //imagine we retrieve the authenticated user rather than the only created one
+		await MonitoringSpec.findOne({owner: user._id, _id: id}).remove().exec();
+		res.status(200).send();
 	});
 
 	router.post('/', async function(req, res) {
-		const user = await User.findOne().exec();
-		const newCity = req.body;
+		const user = await User.findOne().exec(); //imagine we retrieve the authenticated user rather than the only created one
+		const newSpec = new MonitoringSpec(_.assign({}, req.body, {owner: user._id}));
 
-		const existingEntry = _.find(user.monitored, {name: newCity.name});
-		// A new city is being added
-		if(_.isUndefined(existingEntry)) {
-			user.monitored.push(newCity);
-			const cityForecast = new City({name: newCity.name});
-			await cityForecast.save();
-		} else {
-			const idx = _.indexOf(user.monitored, existingEntry);
-			// Replace existing city at index
-			user.monitored.splice(idx, 1, newCity);
-		}
+		const savedSpec = await newSpec.save();
+		res.status(201).send(savedSpec);
+	});
 
-		await user.save();
-		res.status(200).send();		
+	router.put('/:id', async function(req, res) {
+		const {id} = req.params;
+		const user = await User.findOne().exec(); //imagine we retrieve the authenticated user rather than the only created one
+		const monitoringSpec = await MonitoringSpec
+			.findOneAndUpdate(
+				{ _id: id, owner: user._id },
+				_.omit(req.body, 'owner'), 	//don't allow to overwrite the owner
+				{ new: true }
+			).exec();
+
+		res.status(200).send(monitoringSpec);
 	});
 
 	return router;

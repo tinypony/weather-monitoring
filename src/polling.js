@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import {City} from './models//models';
+import {Forecast, MonitoringSpec} from './models//models';
 import http from 'http';
 import babelPolyfill from 'babel-polyfill';
 
@@ -42,7 +42,8 @@ function checkCity(name) {
 		      			const bodyStr = body.join('');
 		      			const jsonResponse = JSON.parse(bodyStr);
 		      			resolve(jsonResponse);
-		      		} catch (er) {
+		      		} catch (err) {
+								console.console.error(err);
 		      			reject(err);
 		      		}
 		      	});
@@ -56,27 +57,21 @@ function checkCity(name) {
 //Async function that reads all cities in the system and checks forecast for each of them
 async function checkConfiguredCities() {
 	try {
-		const cities = await City.find({}).exec();
+		const cities = await MonitoringSpec.find({}).exec();
 
 		if(cities.length === 0) {
 			await delay(CHECK_DELAY);
 		} else {
-
 			for(let i=0; i < cities.length; i++) {
-				const {name, _id} = cities[i];
-
-				let jsonResponse = await checkCity(name);
+				const {name} = cities[i];
+				const jsonResponse = await checkCity(name);
 				const {forecast} = processData(jsonResponse);
-
-				await City.findByIdAndUpdate(_id, {$set: {forecast}}).exec();
-				
+			 	await Forecast.findOneAndUpdate({name}, {name, forecast}, {upsert: true}).exec();
 				console.log(`Checked: ${name}`);
 				await delay(CHECK_DELAY);
 			}
-		}	
-		
+		}
 	} catch(error) {
-		console.log('Something went wrong');
 		console.log(error);
 		await delay(CHECK_DELAY);
 	}
@@ -94,7 +89,7 @@ function setupWeatherPolling() {
 	};
 
 	runCheck();
-	
+
 }
 
 module.exports = setupWeatherPolling;

@@ -37,7 +37,7 @@ function configureWatch() {
 						_context2.prev = 0;
 						_context2.next = 3;
 						return regeneratorRuntime.awrap(function _callee() {
-							var user, cities, monitoredCitiesWithAlerts;
+							var user, monitored, cities, monitoredCitiesWithAlerts;
 							return regeneratorRuntime.async(function _callee$(_context) {
 								while (1) {
 									switch (_context.prev = _context.next) {
@@ -48,14 +48,19 @@ function configureWatch() {
 										case 2:
 											user = _context.sent;
 											_context.next = 5;
-											return regeneratorRuntime.awrap(_models.City.find({}).exec());
+											return regeneratorRuntime.awrap(_models.MonitoringSpec.find({ owner: user._id }));
 
 										case 5:
+											monitored = _context.sent;
+											_context.next = 8;
+											return regeneratorRuntime.awrap(_models.Forecast.find({}).exec());
+
+										case 8:
 											cities = _context.sent;
-											monitoredCitiesWithAlerts = _lodash2.default.map(user.monitored, function (monitoringSpec) {
+											monitoredCitiesWithAlerts = _lodash2.default.map(monitored, function (monitoringSpec) {
 												var latestForecast = _lodash2.default.find(cities, { name: monitoringSpec.name });
 												var firstBreach = findFirstBreach(latestForecast.forecast, monitoringSpec.threshold, monitoringSpec.direction);
-												var plainSpec = _lodash2.default.pick(monitoringSpec, 'name', 'threshold', 'direction');
+												var plainSpec = _lodash2.default.pick(monitoringSpec, '_id', 'name', 'threshold', 'direction', 'owner');
 
 												if (_lodash2.default.isUndefined(firstBreach)) {
 													return _lodash2.default.assign({}, plainSpec, { alert: { breached: false } });
@@ -71,7 +76,7 @@ function configureWatch() {
 
 											res.status(200).send(monitoredCitiesWithAlerts);
 
-										case 8:
+										case 11:
 										case 'end':
 											return _context.stop();
 									}
@@ -97,44 +102,25 @@ function configureWatch() {
 		}, null, this, [[0, 5]]);
 	});
 
-	router.delete('/:cityName', function _callee3(req, res) {
-		var cityNameToDelete, user, existingEntry, idx;
+	router.delete('/:id', function _callee3(req, res) {
+		var id, user;
 		return regeneratorRuntime.async(function _callee3$(_context3) {
 			while (1) {
 				switch (_context3.prev = _context3.next) {
 					case 0:
-						cityNameToDelete = req.params.cityName;
+						id = req.params.id;
 						_context3.next = 3;
 						return regeneratorRuntime.awrap(_models.User.findOne().exec());
 
 					case 3:
 						user = _context3.sent;
-						existingEntry = _lodash2.default.find(user.monitored, { name: cityNameToDelete });
+						_context3.next = 6;
+						return regeneratorRuntime.awrap(_models.MonitoringSpec.findOne({ owner: user._id, _id: id }).remove().exec());
 
-						// A new city is being added
-
-						if (_lodash2.default.isUndefined(existingEntry)) {
-							_context3.next = 13;
-							break;
-						}
-
-						idx = _lodash2.default.indexOf(user.monitored, existingEntry);
-
-						user.monitored.splice(idx, 1);
-						_context3.next = 10;
-						return regeneratorRuntime.awrap(user.save());
-
-					case 10:
+					case 6:
 						res.status(200).send();
-						_context3.next = 14;
-						break;
 
-					case 13:
-						res.status(404).send({
-							message: 'City is not monitored'
-						});
-
-					case 14:
+					case 7:
 					case 'end':
 						return _context3.stop();
 				}
@@ -143,7 +129,7 @@ function configureWatch() {
 	});
 
 	router.post('/', function _callee4(req, res) {
-		var user, newCity, existingEntry, cityForecast, idx;
+		var user, newSpec, savedSpec;
 		return regeneratorRuntime.async(function _callee4$(_context4) {
 			while (1) {
 				switch (_context4.prev = _context4.next) {
@@ -153,40 +139,49 @@ function configureWatch() {
 
 					case 2:
 						user = _context4.sent;
-						newCity = req.body;
-						existingEntry = _lodash2.default.find(user.monitored, { name: newCity.name });
-						// A new city is being added
+						//imagine we retrieve the authenticated user rather than the only created one
+						newSpec = new _models.MonitoringSpec(_lodash2.default.assign({}, req.body, { owner: user._id }));
+						_context4.next = 6;
+						return regeneratorRuntime.awrap(newSpec.save());
 
-						if (!_lodash2.default.isUndefined(existingEntry)) {
-							_context4.next = 12;
-							break;
-						}
+					case 6:
+						savedSpec = _context4.sent;
 
-						user.monitored.push(newCity);
-						cityForecast = new _models.City({ name: newCity.name });
-						_context4.next = 10;
-						return regeneratorRuntime.awrap(cityForecast.save());
+						res.status(201).send(savedSpec);
 
-					case 10:
-						_context4.next = 14;
-						break;
-
-					case 12:
-						idx = _lodash2.default.indexOf(user.monitored, existingEntry);
-						// Replace existing city at index
-
-						user.monitored.splice(idx, 1, newCity);
-
-					case 14:
-						_context4.next = 16;
-						return regeneratorRuntime.awrap(user.save());
-
-					case 16:
-						res.status(200).send();
-
-					case 17:
+					case 8:
 					case 'end':
 						return _context4.stop();
+				}
+			}
+		}, null, this);
+	});
+
+	router.put('/:id', function _callee5(req, res) {
+		var id, user, monitoringSpec;
+		return regeneratorRuntime.async(function _callee5$(_context5) {
+			while (1) {
+				switch (_context5.prev = _context5.next) {
+					case 0:
+						id = req.params.id;
+						_context5.next = 3;
+						return regeneratorRuntime.awrap(_models.User.findOne().exec());
+
+					case 3:
+						user = _context5.sent;
+						_context5.next = 6;
+						return regeneratorRuntime.awrap(_models.MonitoringSpec.findOneAndUpdate({ _id: id, owner: user._id }, _lodash2.default.omit(req.body, 'owner'), //don't allow to overwrite the owner
+						{ new: true }).exec());
+
+					case 6:
+						monitoringSpec = _context5.sent;
+
+
+						res.status(200).send(monitoringSpec);
+
+					case 8:
+					case 'end':
+						return _context5.stop();
 				}
 			}
 		}, null, this);

@@ -1,46 +1,54 @@
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
-       value: true
+  value: true
 });
-var mongoose = require('mongoose');
+exports.Forecast = exports.MonitoringSpec = exports.User = undefined;
 
-var MonitoredCity = {
-       name: {
-              type: String,
-              required: [true, 'Specify city name']
-       },
-       threshold: {
-              type: Number,
-              required: [true, 'Specify threshold']
-       },
-       direction: {
-              type: String,
-              required: [true, 'Specify "larger" or "smaller"']
-       }
-};
+var _mongoose = require('mongoose');
 
-var CityForecast = {
-       name: {
-              type: String,
-              required: [true, 'Specify city name']
-       },
-       forecast: {
-              type: [{
-                     time: Number,
-                     temp: Number
-              }],
-              default: []
-       }
-};
+var _mongoose2 = _interopRequireDefault(_mongoose);
 
-var CityForecastSchema = new mongoose.Schema(CityForecast);
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var UserSchema = new mongoose.Schema({
-       id: String,
-       name: String,
-       monitored: [MonitoredCity]
+var MonitoringSpecSchema = new _mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Specify city name']
+  },
+  threshold: {
+    type: Number,
+    required: [true, 'Specify threshold']
+  },
+  direction: {
+    type: String,
+    required: [true, 'Specify "larger" or "smaller"']
+  },
+  owner: {
+    type: _mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 });
 
-var User = exports.User = mongoose.model('User', UserSchema);
-var City = exports.City = mongoose.model('City', CityForecastSchema);
+var CityForecastSchema = new _mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Specify city name']
+  },
+  forecast: {
+    type: [{
+      time: Number,
+      temp: Number
+    }],
+    default: []
+  }
+});
+
+var UserSchema = new _mongoose.Schema({
+  id: String,
+  name: String
+});
+
+var User = exports.User = _mongoose2.default.model('User', UserSchema);
+var MonitoringSpec = exports.MonitoringSpec = _mongoose2.default.model('MonitoringSpec', MonitoringSpecSchema);
+var Forecast = exports.Forecast = _mongoose2.default.model('Forecast', CityForecastSchema);

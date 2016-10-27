@@ -63,7 +63,8 @@ function checkCity(name) {
 							var bodyStr = body.join('');
 							var jsonResponse = JSON.parse(bodyStr);
 							resolve(jsonResponse);
-						} catch (er) {
+						} catch (err) {
+							console.console.error(err);
 							reject(err);
 						}
 					});
@@ -79,7 +80,7 @@ function checkCity(name) {
 
 //Async function that reads all cities in the system and checks forecast for each of them
 function checkConfiguredCities() {
-	var cities, i, _cities$i, name, _id, jsonResponse, _processData, forecast;
+	var cities, i, name, jsonResponse, _processData, forecast;
 
 	return regeneratorRuntime.async(function checkConfiguredCities$(_context) {
 		while (1) {
@@ -87,7 +88,7 @@ function checkConfiguredCities() {
 				case 0:
 					_context.prev = 0;
 					_context.next = 3;
-					return regeneratorRuntime.awrap(_models.City.find({}).exec());
+					return regeneratorRuntime.awrap(_models.MonitoringSpec.find({}).exec());
 
 				case 3:
 					cities = _context.sent;
@@ -101,7 +102,7 @@ function checkConfiguredCities() {
 					return regeneratorRuntime.awrap(delay(CHECK_DELAY));
 
 				case 7:
-					_context.next = 27;
+					_context.next = 25;
 					break;
 
 				case 9:
@@ -109,58 +110,54 @@ function checkConfiguredCities() {
 
 				case 10:
 					if (!(i < cities.length)) {
-						_context.next = 27;
+						_context.next = 25;
 						break;
 					}
 
-					_cities$i = cities[i];
-					name = _cities$i.name;
-					_id = _cities$i._id;
-					_context.next = 16;
+					name = cities[i].name;
+					_context.next = 14;
 					return regeneratorRuntime.awrap(checkCity(name));
 
-				case 16:
+				case 14:
 					jsonResponse = _context.sent;
 					_processData = processData(jsonResponse);
 					forecast = _processData.forecast;
-					_context.next = 21;
-					return regeneratorRuntime.awrap(_models.City.findByIdAndUpdate(_id, { $set: { forecast: forecast } }).exec());
+					_context.next = 19;
+					return regeneratorRuntime.awrap(_models.Forecast.findOneAndUpdate({ name: name }, { name: name, forecast: forecast }, { upsert: true }).exec());
 
-				case 21:
-
+				case 19:
 					console.log('Checked: ' + name);
-					_context.next = 24;
+					_context.next = 22;
 					return regeneratorRuntime.awrap(delay(CHECK_DELAY));
 
-				case 24:
+				case 22:
 					i++;
 					_context.next = 10;
 					break;
 
-				case 27:
-					_context.next = 35;
+				case 25:
+					_context.next = 32;
 					break;
 
-				case 29:
-					_context.prev = 29;
+				case 27:
+					_context.prev = 27;
 					_context.t0 = _context['catch'](0);
 
-					console.log('Something went wrong');
 					console.log(_context.t0);
-					_context.next = 35;
+					_context.next = 32;
 					return regeneratorRuntime.awrap(delay(CHECK_DELAY));
 
-				case 35:
+				case 32:
 					return _context.abrupt('return', new Promise(function (resolve) {
 						return resolve();
 					}));
 
-				case 36:
+				case 33:
 				case 'end':
 					return _context.stop();
 			}
 		}
-	}, null, this, [[0, 29]]);
+	}, null, this, [[0, 27]]);
 }
 
 function setupWeatherPolling() {
