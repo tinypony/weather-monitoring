@@ -1,0 +1,7 @@
+{
+  "database": "mongodb://localhost/weather-mon",
+  "openweathermap": {
+    "apiKey": "2b8c19a1a75a38433d095d240db82bc9",
+    "checkInterval": 1500
+  }
+}

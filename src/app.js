@@ -4,12 +4,11 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
+import fs from 'fs';
 // load mongoose package
 const mongoose = require('mongoose');
 const session = require('express-session');
 const intializeDb = require('./initialize-db');
-const SocketStore = require('./socket-store');
 const startPolling = require('./polling');
 const routes = require('./routes/index');
 const users = require('./routes/users');
@@ -17,11 +16,7 @@ const watch = require('./routes/watch');
 
 const app = express();
 
-// Use native Node promises
-mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://localhost/weather-mon')
-  .then(() =>  console.log('connection succesful'))
-  .catch(err => console.error(err));
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -40,16 +35,37 @@ app.use(session({
   cookie: { secure: false }
 }));
 
-const mySocketStore = new SocketStore();
+function readJsonFileSync(filepath, encoding){
+
+    if (typeof (encoding) == 'undefined'){
+        encoding = 'utf8';
+    }
+    var file = fs.readFileSync(filepath, encoding);
+    return JSON.parse(file);
+}
+
+function getConfig(file) {
+    var filepath = __dirname + '/../' + file;
+    return readJsonFileSync(filepath);
+}
+
+const configuration = getConfig('config.json');
+
+// Use native Node promises
+mongoose.Promise = global.Promise;
+mongoose.connect(configuration.database)
+  .then(() =>  console.log('connection succesful'))
+  .catch(err => console.error(err));
+
 
 intializeDb()
   .then(user => console.log('User ok ' + user.name))
-  .then(startPolling())
+  .then(startPolling(configuration.openweathermap.apiKey, configuration.openweathermap.checkInterval))
 
 
 app.use('/', routes);
-app.use('/users', users(mySocketStore));
-app.use('/watch', watch(mySocketStore));
+app.use('/users', users());
+app.use('/watch', watch());
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

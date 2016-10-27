@@ -1,5 +1,11 @@
 'use strict';
 
+var _fs = require('fs');
+
+var _fs2 = _interopRequireDefault(_fs);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -11,21 +17,12 @@ var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
 var session = require('express-session');
 var intializeDb = require('./initialize-db');
-var SocketStore = require('./socket-store');
 var startPolling = require('./polling');
 var routes = require('./routes/index');
 var users = require('./routes/users');
 var watch = require('./routes/watch');
 
 var app = express();
-
-// Use native Node promises
-mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://localhost/weather-mon').then(function () {
-  return console.log('connection succesful');
-}).catch(function (err) {
-  return console.error(err);
-});
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -44,15 +41,37 @@ app.use(session({
   cookie: { secure: false }
 }));
 
-var mySocketStore = new SocketStore();
+function readJsonFileSync(filepath, encoding) {
+
+  if (typeof encoding == 'undefined') {
+    encoding = 'utf8';
+  }
+  var file = _fs2.default.readFileSync(filepath, encoding);
+  return JSON.parse(file);
+}
+
+function getConfig(file) {
+  var filepath = __dirname + '/../' + file;
+  return readJsonFileSync(filepath);
+}
+
+var configuration = getConfig('config.json');
+console.log(configuration);
+// Use native Node promises
+mongoose.Promise = global.Promise;
+mongoose.connect(configuration.database).then(function () {
+  return console.log('connection succesful');
+}).catch(function (err) {
+  return console.error(err);
+});
 
 intializeDb().then(function (user) {
   return console.log('User ok ' + user.name);
-}).then(startPolling());
+}).then(startPolling(configuration.openweathermap.apiKey, configuration.openweathermap.checkInterval));
 
 app.use('/', routes);
-app.use('/users', users(mySocketStore));
-app.use('/watch', watch(mySocketStore));
+app.use('/users', users());
+app.use('/watch', watch());
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

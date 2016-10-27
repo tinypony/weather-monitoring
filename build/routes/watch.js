@@ -58,7 +58,7 @@ function configureWatch() {
 										case 8:
 											cities = _context.sent;
 											monitoredCitiesWithAlerts = _lodash2.default.map(monitored, function (monitoringSpec) {
-												var latestForecast = _lodash2.default.find(cities, { name: monitoringSpec.name });
+												var latestForecast = _lodash2.default.find(cities, { name: monitoringSpec.name }) || {};
 												var firstBreach = findFirstBreach(latestForecast.forecast, monitoringSpec.threshold, monitoringSpec.direction);
 												var plainSpec = _lodash2.default.pick(monitoringSpec, '_id', 'name', 'threshold', 'direction', 'owner');
 
@@ -85,16 +85,17 @@ function configureWatch() {
 						}());
 
 					case 3:
-						_context2.next = 8;
+						_context2.next = 9;
 						break;
 
 					case 5:
 						_context2.prev = 5;
 						_context2.t0 = _context2['catch'](0);
 
+						console.error(_context2.t0);
 						res.status(400).send(_context2.t0);
 
-					case 8:
+					case 9:
 					case 'end':
 						return _context2.stop();
 				}

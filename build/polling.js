@@ -16,9 +16,6 @@ var _babelPolyfill2 = _interopRequireDefault(_babelPolyfill);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var API_KEY = '2b8c19a1a75a38433d095d240db82bc9';
-var CHECK_DELAY = 2000;
-
 var processData = function processData(data) {
 	return {
 		name: data.city.name,
@@ -34,8 +31,8 @@ function delay(timeout) {
 	});
 }
 
-var getUrlForCity = function getUrlForCity(name) {
-	return 'http://api.openweathermap.org/data/2.5/forecast?q=' + name + '&units=metric&APPID=' + API_KEY;
+var getUrlForCity = function getUrlForCity(name, apiKey) {
+	return 'http://api.openweathermap.org/data/2.5/forecast?q=' + name + '&units=metric&APPID=' + apiKey;
 };
 
 /**
@@ -44,10 +41,10 @@ var getUrlForCity = function getUrlForCity(name) {
  * @param {String} name - the name of the city.
  * @returns {Promise} - a promise that is resolved with json response from http://api.openweathermap.org/data/2.5/forecast.
  */
-function checkCity(name) {
+function checkCity(name, apiKey) {
 	return new Promise(function (resolve, reject) {
 		//Create http request to openweathermap
-		var request = _http2.default.get(getUrlForCity(name), function (response) {
+		var request = _http2.default.get(getUrlForCity(name, apiKey), function (response) {
 			//reject promise if received status code other than 200
 			if (response.statusCode !== 200) {
 				reject(new Error('Failed to check weather for ' + name + ': ' + request.statusCode));
@@ -79,7 +76,7 @@ function checkCity(name) {
 };
 
 //Async function that reads all cities in the system and checks forecast for each of them
-function checkConfiguredCities() {
+function checkConfiguredCities(apiKey, checkInterval) {
 	var cities, i, name, jsonResponse, _processData, forecast;
 
 	return regeneratorRuntime.async(function checkConfiguredCities$(_context) {
@@ -99,10 +96,10 @@ function checkConfiguredCities() {
 					}
 
 					_context.next = 7;
-					return regeneratorRuntime.awrap(delay(CHECK_DELAY));
+					return regeneratorRuntime.awrap(delay(checkInterval));
 
 				case 7:
-					_context.next = 25;
+					_context.next = 24;
 					break;
 
 				case 9:
@@ -110,72 +107,71 @@ function checkConfiguredCities() {
 
 				case 10:
 					if (!(i < cities.length)) {
-						_context.next = 25;
+						_context.next = 24;
 						break;
 					}
 
 					name = cities[i].name;
 					_context.next = 14;
-					return regeneratorRuntime.awrap(checkCity(name));
+					return regeneratorRuntime.awrap(checkCity(name, apiKey));
 
 				case 14:
 					jsonResponse = _context.sent;
-					_processData = processData(jsonResponse);
-					forecast = _processData.forecast;
-					_context.next = 19;
+					_processData = processData(jsonResponse), forecast = _processData.forecast;
+					_context.next = 18;
 					return regeneratorRuntime.awrap(_models.Forecast.findOneAndUpdate({ name: name }, { name: name, forecast: forecast }, { upsert: true }).exec());
 
-				case 19:
+				case 18:
 					console.log('Checked: ' + name);
-					_context.next = 22;
-					return regeneratorRuntime.awrap(delay(CHECK_DELAY));
+					_context.next = 21;
+					return regeneratorRuntime.awrap(delay(checkInterval));
 
-				case 22:
+				case 21:
 					i++;
 					_context.next = 10;
 					break;
 
-				case 25:
-					_context.next = 32;
+				case 24:
+					_context.next = 31;
 					break;
 
-				case 27:
-					_context.prev = 27;
+				case 26:
+					_context.prev = 26;
 					_context.t0 = _context['catch'](0);
 
 					console.log(_context.t0);
-					_context.next = 32;
-					return regeneratorRuntime.awrap(delay(CHECK_DELAY));
+					_context.next = 31;
+					return regeneratorRuntime.awrap(delay(checkInterval));
 
-				case 32:
+				case 31:
 					return _context.abrupt('return', new Promise(function (resolve) {
 						return resolve();
 					}));
 
-				case 33:
+				case 32:
 				case 'end':
 					return _context.stop();
 			}
 		}
-	}, null, this, [[0, 27]]);
+	}, null, this, [[0, 26]]);
 }
 
-function setupWeatherPolling() {
+function setupWeatherPolling(apiKey, checkInterval) {
 	var checkTimeout = void 0;
 
-	function runCheck() {
+	function runCheck(apiKey, checkInterval) {
 		var result;
 		return regeneratorRuntime.async(function runCheck$(_context2) {
 			while (1) {
 				switch (_context2.prev = _context2.next) {
 					case 0:
 						_context2.next = 2;
-						return regeneratorRuntime.awrap(checkConfiguredCities());
+						return regeneratorRuntime.awrap(checkConfiguredCities(apiKey, checkInterval));
 
 					case 2:
 						result = _context2.sent;
 
-						setTimeout(runCheck, CHECK_DELAY);
+						setTimeout(runCheck.bind(null, apiKey, checkInterval), checkInterval);
 
 					case 4:
 					case 'end':
@@ -185,7 +181,7 @@ function setupWeatherPolling() {
 		}, null, this);
 	};
 
-	runCheck();
+	runCheck(apiKey, checkInterval);
 }
 
 module.exports = setupWeatherPolling;

@@ -24,7 +24,7 @@ function configureWatch() {
 			const cities = await Forecast.find({}).exec();
 
 			const monitoredCitiesWithAlerts = _.map(monitored, monitoringSpec => {
-				const latestForecast = _.find(cities, {name: monitoringSpec.name});
+				const latestForecast = _.find(cities, {name: monitoringSpec.name}) || {};
 				const firstBreach = findFirstBreach(latestForecast.forecast, monitoringSpec.threshold, monitoringSpec.direction);
 				const plainSpec = _.pick(monitoringSpec, '_id', 'name', 'threshold', 'direction', 'owner');
 
@@ -41,6 +41,7 @@ function configureWatch() {
 			});
 			res.status(200).send(monitoredCitiesWithAlerts);
 		} catch(err) {
+			console.error(err);
 			res.status(400).send(err);
 		}
 	});
