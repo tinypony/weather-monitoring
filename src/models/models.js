@@ -38,8 +38,34 @@ const UserSchema = new Schema({
   name: String
 });
 
+const ControllerSchema = new Schema({
+	identity: {
+		type: String,
+		required: [true, 'Identity must be defined and be unique']
+	},
+	address: {
+		type: String,
+		required: [true, 'IP address of controller must be definend']
+	},
+	port: {
+		type: Number,
+		required: [true, 'Port number of the controller must be specified']
+	},
+	data: {
+		type: Schema.Types.Mixed
+	}
+});
 
+const TokenSchema = new Schema({
+	value: { type: String, required: [true, 'Token value must be provided']}
+});
 
-export const User = mongoose.model('User', UserSchema);
-export const MonitoringSpec = mongoose.model('MonitoringSpec', MonitoringSpecSchema);
-export const Forecast = mongoose.model('Forecast', CityForecastSchema);
+TokenSchema.methods.verifyToken = function() {
+	return true;
+}
+//
+// export const User = mongoose.model('User', UserSchema);
+// export const MonitoringSpec = mongoose.model('MonitoringSpec', MonitoringSpecSchema);
+// export const Forecast = mongoose.model('Forecast', CityForecastSchema);
+export const Controller = mongoose.model('Controller', ControllerSchema);
+export const Token = mongoose.model('Token', TokenSchema);

@@ -1,17 +1,14 @@
-var User = require('./models/models.js').User;
+import {Controller} from './models/models';
 
-const TEST_USER_NAME = 'Test User';
-
-module.exports = function() {
-	return User.findOne({name: TEST_USER_NAME})
-		.exec()
-		.catch(err => console.err('Problem initialzing database ' + JSON.stringify(err)))
-		.then(user => {
-			if(!user) {
-				var newUser = new User({name: TEST_USER_NAME, monitored: [], id: ''});
-				return newUser.save();
-			}
-
-			return user;
-		});
-}
+module.exports = async function() {
+	try {
+		await Controller.findOneAndUpdate(
+			{identity: 'bed-light'},
+			{identity: 'bed-light', address: '192.168.1.9', port: 3456, data: [0x99, 0x99, 0x99]},
+			{upsert: true}
+		).exec();
+		return;
+	} catch(error) {
+		console.error('Problem initialzing database ' + JSON.stringify(error));
+	}
+};
