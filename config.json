@@ -1,5 +1,5 @@
 {
-  "database": "mongodb://localhost/home-control",
+  "database": "mongodb://mongodb-container/home-control",
   "openweathermap": {
     "apiKey": "2b8c19a1a75a38433d095d240db82bc9",
     "checkInterval": 1500
