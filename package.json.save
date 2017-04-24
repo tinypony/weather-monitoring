@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build": "babel src/ -d build/",
-    "start": "node ./bin/www"
+    "start": "
+node ./bin/www"
   },
   "dependencies": {
     "babel-plugin-syntax-async-functions": "^6.1.4",

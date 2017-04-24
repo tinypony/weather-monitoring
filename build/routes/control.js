@@ -38,7 +38,7 @@ function authenticate(req, res, next) {
 		if (!token) {
 			return res.status(401).json({ message: "Incorrect token credentials" });
 		}
-
+		//    console.log("Auth alright");
 		req.user = token;
 		next();
 	})(req, res, next);
@@ -117,6 +117,7 @@ var createPayload = function createPayload(command) {
 };
 
 var sendCommand = function sendCommand(controller, payloadByteArray) {
+	console.log('Send command to ' + controller.address + ':' + controller.port);
 	unicast_socket.send(new Buffer(payloadByteArray), 0, payloadByteArray.length, controller.port, controller.address, function (err) {
 		if (err) {
 			console.log(JSON.stringify(err));
@@ -161,39 +162,54 @@ router.put('/:identity', authenticate, function _callee3(req, res) {
 				case 0:
 					identity = req.params.identity;
 					command = req.body;
+					//	console.log('In PUT method');
 
 					if (!(command.type && _lodash2.default.includes(_lodash2.default.keys(COMMAND_TYPE), command.type))) {
-						_context3.next = 13;
+						_context3.next = 21;
 						break;
 					}
 
-					_context3.next = 5;
+					_context3.prev = 3;
+					_context3.next = 6;
 					return regeneratorRuntime.awrap(_models.Controller.findOne({ identity: identity }).exec());
 
-				case 5:
+				case 6:
 					controller = _context3.sent;
-					_context3.next = 8;
+					_context3.next = 9;
 					return regeneratorRuntime.awrap(savePayloadIfProvided(controller, command));
 
-				case 8:
+				case 9:
 					controller = _context3.sent;
 
+					//			console.log("command saved");
 					sendCommand(controller, createPayload(command));
+					console.log("command sent to controller");
 					res.status(200).send(controller);
-					_context3.next = 14;
+					_context3.next = 19;
 					break;
 
-				case 13:
+				case 15:
+					_context3.prev = 15;
+					_context3.t0 = _context3['catch'](3);
+
+					console.error(_context3.t0);
+					res.status(400).send(_context3.t0);
+
+				case 19:
+					_context3.next = 22;
+					break;
+
+				case 21:
 					res.status(400).send({
 						message: 'Command type and value must be defined'
 					});
 
-				case 14:
+				case 22:
 				case 'end':
 					return _context3.stop();
 			}
 		}
-	}, null, this);
+	}, null, this, [[3, 15]]);
 });
 
 exports.default = router;

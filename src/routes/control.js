@@ -17,7 +17,7 @@ function authenticate(req, res, next) {
     if (!token) {
       return res.status(401).json({message: "Incorrect token credentials"});
     }
-
+//    console.log("Auth alright");
     req.user = token;
     next();
   })(req,res,next);
@@ -77,6 +77,7 @@ const createPayload = command => {
 };
 
 const sendCommand = (controller, payloadByteArray) => {
+	console.log(`Send command to ${controller.address}:${controller.port}`);
 	unicast_socket.send(
 		new Buffer(payloadByteArray),
 		0,
@@ -104,12 +105,20 @@ const savePayloadIfProvided = async (controller, command) => {
 router.put('/:identity', authenticate, async function(req, res) {
 	const {identity} = req.params;
 	const command = req.body;
-
+//	console.log('In PUT method');
 	if (command.type && _.includes(_.keys(COMMAND_TYPE), command.type)) {
-		let controller = await Controller.findOne({identity}).exec();
-		controller = await savePayloadIfProvided(controller, command);
-		sendCommand(controller, createPayload(command));
-		res.status(200).send(controller);
+		try {
+			let controller = await Controller.findOne({identity}).exec();
+//			console.log("found controller");
+			controller = await savePayloadIfProvided(controller, command);
+//			console.log("command saved");
+			sendCommand(controller, createPayload(command));
+			console.log("command sent to controller");
+			res.status(200).send(controller);
+		} catch(e) {
+			console.error(e);
+			res.status(400).send(e);
+		}
 	} else {
 		res.status(400).send({
 			message: 'Command type and value must be defined'
